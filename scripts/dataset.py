@@ -5,6 +5,7 @@ from torch.utils.data import Dataset, DataLoader
 
 import pandas as pd
 from omegaconf import OmegaConf
+from omegaconf.dictconfig import DictConfig
 
 
 class NewsDataset(Dataset):
@@ -21,8 +22,11 @@ class NewsDataset(Dataset):
             self.data = pd.read_json(data_folder + 'test_prep.jsonl', lines=True)
         
         self.label_mapping = dict(OmegaConf.load('config/classes.yaml'))
+        self.reverse_label_mapping = {v: k for k, v in self.label_mapping.items()}
         self._tokenizer = get_tokenizer('basic_english')
-        self._vocab = build_vocab_from_iterator(map(self._tokenizer, train_data['full_text']))
+        train_tokens = [self._tokenizer(text) for text in train_data['full_text']]
+        self._vocab = build_vocab_from_iterator(train_tokens, specials=['<unk>'], min_freq=1)
+        self._vocab.set_default_index(self._vocab['<unk>'])
         self.split = split
     
     def _text_pipeline(self, text: str) -> torch.Tensor:
@@ -55,15 +59,26 @@ def collate_fn(batch: list[dict]) -> tuple:
     return text_tensor, offsets, label_tensor
 
 
-def get_dataloader(data_folder: str = 'data/',
-                   split: str = 'train',
-                   batch_size: int = 16) -> DataLoader:
-    dataset = NewsDataset(data_folder, split)
-    return DataLoader(dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_fn)
+def get_dataloader(cfg: DictConfig,
+                   split: str = 'train') -> DataLoader:
+    dataset = NewsDataset(cfg.dataset.dir, split)
+    if split == 'train':
+        if cfg.dataset.sampling.enable:
+            class_sample_count = dataset.data['category'].value_counts().to_dict()
+            weights = 1 / torch.tensor([class_sample_count[label] for label in dataset.label_mapping.keys() if label in class_sample_count])
+            samples_weight = torch.tensor([weights[t] for t in dataset.data['category'].map(dataset.label_mapping)])
+            if cfg.dataset.sampling.oversampling:
+                num_samples = int(max(class_sample_count.values()))*len(samples_weight)
+            else:
+                num_samples = len(samples_weight)
+            sampler = torch.utils.data.WeightedRandomSampler(samples_weight, num_samples)
+            return DataLoader(dataset, batch_size=cfg.hparams.batch_size, sampler=sampler, collate_fn=collate_fn), len(dataset._vocab), dataset.reverse_label_mapping
+    return DataLoader(dataset, batch_size=cfg.hparams.batch_size, shuffle=True, collate_fn=collate_fn), len(dataset._vocab), dataset.reverse_label_mapping
     
 
 if __name__ == "__main__":
-    dataloader = get_dataloader()
+    cfg = OmegaConf.load('config/config.yaml')
+    dataloader = get_dataloader(cfg)
 
     for i, (text, offsets, labels) in enumerate(dataloader):
         print(text)

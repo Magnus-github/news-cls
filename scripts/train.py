@@ -6,6 +6,7 @@ from dataset import get_dataloader
 from omegaconf import OmegaConf
 import logging
 import coloredlogs
+from tqdm import tqdm
 
 import os
 
@@ -14,11 +15,13 @@ logger.setLevel(logging.INFO)
 coloredlogs.install(level=logging.INFO, fmt="[%(asctime)s] [%(name)s] [%(module)s] [%(levelname)s] %(message)s")
 
 
-def train():
-    cfg = OmegaConf.load('config/config.yaml')
+def train(cfg):
+    train_loader, vocab_len = get_dataloader(cfg, split='train')
+
+    logger.info(f'Vocab size: {vocab_len}')
+    cfg.model.params.vocab_size = vocab_len
     model = NewsClassifier(**cfg.model.params)
     
-    train_loader = get_dataloader(split='train', batch_size=cfg.hparams.batch_size)
     
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=cfg.hparams.learning_rate)
@@ -29,7 +32,7 @@ def train():
         running_loss = 0.0
         running_acc = 0.0
 
-        for i, (text, offsets, labels) in enumerate(train_loader):
+        for i, (text, offsets, labels) in enumerate(tqdm(train_loader)):
             optimizer.zero_grad()
             output = model(text, offsets)
             loss = criterion(output, labels)
@@ -49,4 +52,5 @@ def train():
 
 
 if __name__ == '__main__':
-    train()
+    cfg = OmegaConf.load('config/config.yaml')
+    train(cfg)

@@ -1,12 +1,15 @@
 dataset:
     dir: data/
+    sampling:
+        enable: True
+        oversampling: false
 model:
     params:
-        vocab_size: 26022
+        vocab_size: 26023
         embed_dim: 128
         num_class: 42
     save_path: model/
 hparams:
     epochs: 50
     batch_size: 32
-    learning_rate: 0.001
+    learning_rate: 0.5
