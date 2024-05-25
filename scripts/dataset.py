@@ -73,6 +73,9 @@ def get_dataloader(cfg: DictConfig,
                 num_samples = len(samples_weight)
             sampler = torch.utils.data.WeightedRandomSampler(samples_weight, num_samples)
             return DataLoader(dataset, batch_size=cfg.hparams.batch_size, sampler=sampler, collate_fn=collate_fn), len(dataset._vocab), dataset.reverse_label_mapping
+        
+    if split == 'test':
+        return DataLoader(dataset, batch_size=1, collate_fn=collate_fn), len(dataset._vocab), dataset.reverse_label_mapping, dataset.data
     return DataLoader(dataset, batch_size=cfg.hparams.batch_size, shuffle=True, collate_fn=collate_fn), len(dataset._vocab), dataset.reverse_label_mapping
     
 

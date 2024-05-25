@@ -1,9 +1,9 @@
 import torch
 
-from model import NewsClassifier
-from dataset import get_dataloader
+from scripts.model import NewsClassifier
+from scripts.dataset import get_dataloader
 
-from omegaconf import OmegaConf
+from omegaconf import OmegaConf, DictConfig
 import logging
 import coloredlogs
 from tqdm import tqdm
@@ -12,10 +12,9 @@ import os
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-coloredlogs.install(level=logging.INFO, fmt="[%(asctime)s] [%(name)s] [%(module)s] [%(levelname)s] %(message)s")
 
 
-def train(cfg):
+def train(cfg: DictConfig) -> None:
     train_loader, vocab_len = get_dataloader(cfg, split='train')
 
     logger.info(f'Vocab size: {vocab_len}')
@@ -48,7 +47,7 @@ def train(cfg):
     os.makedirs(os.path.dirname(cfg.model.save_path), exist_ok=True)
     torch.save(model.state_dict(), f'{cfg.model.save_path}model.pth')
     
-    return None
+    return
 
 
 if __name__ == '__main__':

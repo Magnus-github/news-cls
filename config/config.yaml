@@ -1,5 +1,6 @@
 dataset:
     dir: data/
+    test_data_file: test_prep.jsonl
     sampling:
         enable: True
         oversampling: false
@@ -8,8 +9,11 @@ model:
         vocab_size: 26023
         embed_dim: 128
         num_class: 42
-    save_path: model/
 hparams:
     epochs: 50
     batch_size: 32
     learning_rate: 0.5
+output_paths:
+    train: outputs/training
+    eval: outputs/evaluation
+    test: outputs/testing

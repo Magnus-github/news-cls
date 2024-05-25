@@ -22,7 +22,7 @@ def inspect_data(data_folder: str = 'data/') -> None:
     plt.ylabel("Count")
     plt.bar(count_df.index,count_df["headline"])
     plt.plot(count_df.index,count_df["headline"],'ro')
-    plt.savefig('category_count.png')
+    plt.savefig('outputs/preprocessing/category_count.png')
     return None
 
 

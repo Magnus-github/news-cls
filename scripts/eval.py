@@ -3,10 +3,10 @@ from sklearn.metrics import f1_score, recall_score, precision_score, confusion_m
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from model import NewsClassifier
-from dataset import get_dataloader
+from scripts.model import NewsClassifier
+from scripts.dataset import get_dataloader
 
-from omegaconf import OmegaConf
+from omegaconf import OmegaConf, DictConfig
 import logging
 import coloredlogs
 from tqdm import tqdm
@@ -15,11 +15,10 @@ import os
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-coloredlogs.install(level=logging.INFO, fmt="[%(asctime)s] [%(name)s] [%(module)s] [%(levelname)s] %(message)s")
 
 
-def evaluate(cfg):
-    test_loader, vocab_len, reverse_label_map = get_dataloader(cfg, split='val')
+def evaluate(cfg: DictConfig):
+    val_loader, vocab_len, reverse_label_map = get_dataloader(cfg, split='val')
 
     logger.info(f'Vocab size: {vocab_len}')
     cfg.model.params.vocab_size = vocab_len
@@ -31,7 +30,7 @@ def evaluate(cfg):
     running_acc = 0.0
     preds = []
     labels_lst = []
-    for i, (text, offsets, labels) in enumerate(tqdm(test_loader)):
+    for i, (text, offsets, labels) in enumerate(tqdm(val_loader)):
         with torch.no_grad():
             output = model(text, offsets)
             running_acc += (output.argmax(1) == labels).sum().item()/len(labels)
@@ -46,15 +45,15 @@ def evaluate(cfg):
     confusion = confusion_matrix(all_labels, preds)
 
     results = pd.DataFrame({'class': [reverse_label_map[i] for i in range(len(f1))],'f1': f1, 'recall': recall, 'precision': precision})
-    results.to_csv('results.csv', index=True)
+    results.to_csv(f'{cfg.output_paths.eval}/results.csv', index=True)
 
     disp = ConfusionMatrixDisplay(confusion[:5,:5], display_labels=[reverse_label_map[i] for i in range(len(f1))][:5])
     disp.plot()
-    plt.savefig('confusion_matrix.png')
+    plt.savefig(f'{cfg.output_paths.eval}/confusion_matrix.png')
     
-    logger.info(f'Accuracy: {running_acc/len(test_loader)}')
+    logger.info(f'Accuracy: {running_acc/len(val_loader)}')
     
-    return None
+    return
 
 
 if __name__ == '__main__':
