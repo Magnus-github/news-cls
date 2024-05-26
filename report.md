@@ -31,7 +31,7 @@ For the text pipeline we use the [TorchText](https://pytorch.org/text/stable/ind
    -  I used the *basic_english* tokenizer from the *torchtext* library. It turns the text into a list of tokens (in this case, each word is one token).
   
 
-When text is sampled, it is tokennized and then we lookup the index of that token in the vocabulary.
+When text is sampled, it is tokenized and then we lookup the index of that token in the vocabulary.
 
 I followed the [Pytorch Tutorial](https://pytorch.org/tutorials/beginner/text_sentiment_ngrams_tutorial.html) for this part.
 
