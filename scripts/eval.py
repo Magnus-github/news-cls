@@ -8,7 +8,6 @@ from scripts.dataset import get_dataloader
 
 from omegaconf import OmegaConf, DictConfig
 import logging
-import coloredlogs
 from tqdm import tqdm
 
 import os
@@ -17,13 +16,13 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def evaluate(cfg: DictConfig):
+def evaluate(cfg: DictConfig, model_file: str = 'model.pth'):
     val_loader, vocab_len, reverse_label_map = get_dataloader(cfg, split='val')
 
     logger.info(f'Vocab size: {vocab_len}')
     cfg.model.params.vocab_size = vocab_len
     model = NewsClassifier(**cfg.model.params)
-    model_file = os.path.join(cfg.model.save_path, 'model_85train.pth')
+    model_file = os.path.join(cfg.output_paths.train, model_file)
     model.load_state_dict(torch.load(model_file))
     model.eval()
     
@@ -39,17 +38,30 @@ def evaluate(cfg: DictConfig):
     
     preds = torch.cat(preds).cpu().numpy()
     all_labels = torch.cat(labels_lst).cpu().numpy()
-    f1 = f1_score(all_labels, preds, average=None)
-    recall = recall_score(all_labels, preds, average=None)
-    precision = precision_score(all_labels, preds, average=None)
-    confusion = confusion_matrix(all_labels, preds)
+    f1 = f1_score(all_labels, preds, average=None).round(2)
+    recall = recall_score(all_labels, preds, average=None).round(2)
+    precision = precision_score(all_labels, preds, average=None).round(2)
+    confusion = confusion_matrix(all_labels, preds, normalize='all')
 
     results = pd.DataFrame({'class': [reverse_label_map[i] for i in range(len(f1))],'f1': f1, 'recall': recall, 'precision': precision})
+    os.makedirs(cfg.output_paths.eval, exist_ok=True)
     results.to_csv(f'{cfg.output_paths.eval}/results.csv', index=True)
 
-    disp = ConfusionMatrixDisplay(confusion[:5,:5], display_labels=[reverse_label_map[i] for i in range(len(f1))][:5])
-    disp.plot()
-    plt.savefig(f'{cfg.output_paths.eval}/confusion_matrix.png')
+    disp = ConfusionMatrixDisplay(confusion[:10,:10], display_labels=[reverse_label_map[i] for i in range(len(f1))][:10])
+    disp.plot(xticks_rotation='vertical', include_values=False)
+    disp.ax_.set_title('Confusion matrix (first 10 classes)')
+    disp.figure_.tight_layout()
+    disp.figure_.savefig(f'{cfg.output_paths.eval}/confusion_matrix.pdf')
+    # plt.savefig(f'{cfg.output_paths.eval}/confusion_matrix.pdf')
+
+    disp = ConfusionMatrixDisplay.from_predictions(all_labels, preds,
+                                                   display_labels=[reverse_label_map[i] for i in range(len(f1))],
+                                                   xticks_rotation='vertical',
+                                                   include_values=False,
+                                                   normalize='all')
+    disp.figure_.tight_layout()
+    disp.ax_.set_title('Confusion matrix (all classes)')
+    disp.figure_.savefig(f'{cfg.output_paths.eval}/confusion_matrix_all.pdf')
     
     logger.info(f'Accuracy: {running_acc/len(val_loader)}')
     

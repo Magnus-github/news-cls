@@ -5,7 +5,6 @@ from scripts.dataset import get_dataloader
 
 from omegaconf import OmegaConf, DictConfig
 import logging
-import coloredlogs
 from tqdm import tqdm
 
 import os
@@ -14,7 +13,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def train(cfg: DictConfig) -> None:
+def train(cfg: DictConfig, model_file: str = 'model.pth') -> None:
     train_loader, vocab_len = get_dataloader(cfg, split='train')
 
     logger.info(f'Vocab size: {vocab_len}')
@@ -45,7 +44,8 @@ def train(cfg: DictConfig) -> None:
         logger.info(f'Epoch: {epoch}, Loss: {running_loss/len(train_loader)}, Accuracy: {running_acc/len(train_loader)}')
         
     os.makedirs(os.path.dirname(cfg.model.save_path), exist_ok=True)
-    torch.save(model.state_dict(), f'{cfg.model.save_path}model.pth')
+    save_path = os.path.join(cfg.model.save_path, model_file)
+    torch.save(model.state_dict(), save_path)
     
     return
 

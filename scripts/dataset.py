@@ -18,8 +18,6 @@ class NewsDataset(Dataset):
             self.data = train_data
         elif split == 'val':
             self.data = pd.read_json(data_folder + 'dev_prep.jsonl', lines=True)
-        elif split == 'test':
-            self.data = pd.read_json(data_folder + 'test_prep.jsonl', lines=True)
         
         self.label_mapping = dict(OmegaConf.load('config/classes.yaml'))
         self.reverse_label_mapping = {v: k for k, v in self.label_mapping.items()}
@@ -72,7 +70,7 @@ def get_dataloader(cfg: DictConfig,
             else:
                 num_samples = len(samples_weight)
             sampler = torch.utils.data.WeightedRandomSampler(samples_weight, num_samples)
-            return DataLoader(dataset, batch_size=cfg.hparams.batch_size, sampler=sampler, collate_fn=collate_fn), len(dataset._vocab), dataset.reverse_label_mapping
+            return DataLoader(dataset, batch_size=cfg.hparams.batch_size, sampler=sampler, collate_fn=collate_fn), len(dataset._vocab)
         
     if split == 'test':
         return DataLoader(dataset, batch_size=1, collate_fn=collate_fn), len(dataset._vocab), dataset.reverse_label_mapping, dataset.data
