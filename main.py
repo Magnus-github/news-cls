@@ -15,7 +15,7 @@ def main(args: argparse.Namespace) -> None:
     if args.mode == 'preprocess':
         logger.info('Preprocessing data...')
         preprocessing.preprocess_data(cfg.dataset.dir)
-    if args.mode == 'train':
+    elif args.mode == 'train':
         logger.info('Training model...')
         train.train(cfg, args.model_file)
     elif args.mode == 'eval':
