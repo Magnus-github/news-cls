@@ -43,8 +43,8 @@ def train(cfg: DictConfig, model_file: str = 'model.pth') -> None:
 
         logger.info(f'Epoch: {epoch}, Loss: {running_loss/len(train_loader)}, Accuracy: {running_acc/len(train_loader)}')
         
-    os.makedirs(os.path.dirname(cfg.model.save_path), exist_ok=True)
-    save_path = os.path.join(cfg.model.save_path, model_file)
+    os.makedirs(os.path.dirname(cfg.output_paths.train), exist_ok=True)
+    save_path = os.path.join(cfg.output_paths.train, model_file)
     torch.save(model.state_dict(), save_path)
     
     return
