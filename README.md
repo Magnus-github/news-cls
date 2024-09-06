@@ -1,4 +1,4 @@
-# AI dev assignment - News classification
+# News classification - challenge
 
 Create a model for text classification based on given data. Make your code available on a public Git repo.
 
